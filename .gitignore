@@ -1,3 +1,9 @@
+# My ignore list
+data/*
+.idea/*
+.log/*
+.jupyter_log/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
