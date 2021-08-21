@@ -1,5 +1,6 @@
 # My ignore list
 data/*
+tests/*
 .idea/*
 .log/*
 .jupyter_log/*
