@@ -56,7 +56,7 @@ class BaseModelWrapper:
 
     def train(self, train_dl):
         self.model.train()
-        debug_step, total_step, total_loss, total_acc = len(train_dl)/10, len(train_dl), 0, 0
+        debug_step, total_step, total_loss, total_acc = len(train_dl)//10, len(train_dl), 0, 0
 
         for step, (x, y) in enumerate(train_dl):
             x, y = x.to(self.device), y.to(self.device)
@@ -81,7 +81,7 @@ class BaseModelWrapper:
     @torch.no_grad()
     def valid(self, dl):
         self.model.eval()
-        debug_step, total_step, total_loss, total_acc = len(dl)/10, len(dl), 0, 0
+        debug_step, total_step, total_loss, total_acc = len(dl)//10, len(dl), 0, 0
         for step, (x, y) in enumerate(dl):
             x, y = x.float().to(self.device), y.long().to(self.device)
             y_hat = self.model.predict(x)
