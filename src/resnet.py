@@ -49,13 +49,13 @@ class BottleNeck(nn.Module):
 
     def __init__(self, in_channels, out_channels, stride, norm_layer, downsample=None, groups=1, base_width=64):
         super(BottleNeck, self).__init__()
-        width = int(out_channels * (base_width/64.0)) * groups
+        width = int(out_channels * (base_width / 64.0)) * groups
         self.conv1 = conv1x1(in_channels, width)
         self.conv2 = conv3x3(width, width, stride, groups=groups)
-        self.conv3 = conv1x1(width, out_channels*self.factor)
+        self.conv3 = conv1x1(width, out_channels * self.factor)
         self.bn1 = norm_layer(width)
         self.bn2 = norm_layer(width)
-        self.bn3 = norm_layer(out_channels*self.factor)
+        self.bn3 = norm_layer(out_channels * self.factor)
         self.downsample = downsample if downsample else nn.Identity()
 
     def forward(self, x):
@@ -66,23 +66,28 @@ class BottleNeck(nn.Module):
 
 class ResNet(nn.Module):
     def __init__(self, block: Type[Union[BasicBlock, BottleNeck]], nblock: list, nclass: int = 1000,
-                 norm_layer: nn.Module = nn.BatchNorm2d, groups=1, base_width=64) -> None:
+                 channels: list = [64, 128, 256, 512], norm_layer: nn.Module = nn.BatchNorm2d, groups=1,
+                 base_width=64) -> None:
         super(ResNet, self).__init__()
         self.groups = groups
         self.base_width = base_width
         self.norm_layer = norm_layer
-        self.in_channels = 64
+        self.in_channels = channels[0]
+
         self.conv1 = nn.Conv2d(3, self.in_channels, kernel_size=(7, 7), stride=2, padding=(1, 1), bias=False)
         self.bn1 = self.norm_layer(self.in_channels)
         self.relu = nn.ReLU(inplace=False)
         self.maxpool = nn.MaxPool2d(kernel_size=(3, 3), stride=2, padding=1)
-        self.layer1 = self.make_layer(block=block, nblock=nblock[0], channels=64)
-        self.layer2 = self.make_layer(block=block, nblock=nblock[1], channels=128)
-        self.layer3 = self.make_layer(block=block, nblock=nblock[2], channels=256)
-        self.layer4 = self.make_layer(block=block, nblock=nblock[3], channels=512)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(512 * block.factor, nclass)
+        self.fc = nn.Linear(channels[-1] * block.factor, nclass)
+
+        self.layers = [self.make_layer(block=block, nblock=nblock[i], channels=channels[i]) for i in range(len(nblock))]
+        self.register_layer()
+
+    def register_layer(self):
+        for i, layer in enumerate(self.layers):
+            exec('self.layer{} = {}'.format(i + 1, 'layer'))
 
     def make_layer(self, block: Type[Union[BasicBlock, BottleNeck]], nblock: int, channels: int) -> nn.Sequential:
         layers = []
@@ -106,14 +111,12 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         x = self.maxpool(self.relu(self.bn1(self.conv1(x))))
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        for layer in self.layers:
+            x = layer(x)
         return self.fc(self.flatten(self.avgpool(x)))
 
 
-def get_model(model_name: str, device, nclass=1000, zero_init_residual=False, pretrained=False) -> nn.Module:
+def get_model(model_name: str, device='cpu', nclass=1000, zero_init_residual=False, pretrained=False) -> nn.Module:
     if model_name == 'resnet18':
         model = ResNet(block=BasicBlock, nblock=[2, 2, 2, 2], nclass=nclass)
     elif model_name == 'resnet34':
@@ -144,7 +147,8 @@ def get_model(model_name: str, device, nclass=1000, zero_init_residual=False, pr
 
     if pretrained:
         Path(os.path.join('pretrained', model_name)).mkdir(parents=True, exist_ok=True)
-        state_dict = load_state_dict_from_url(url=model_urls[model_name], model_dir=os.path.join('pretrained', model_name),
+        state_dict = load_state_dict_from_url(url=model_urls[model_name],
+                                              model_dir=os.path.join('pretrained', model_name),
                                               progress=True, map_location=device)
         model.load_state_dict(state_dict, strict=False)
 
