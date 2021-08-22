@@ -2,14 +2,14 @@ from typing import Type, Union
 
 from torch import nn
 
-from src.resnet import ResNet, BasicBlock, BottleNeck
+from src.resnet import ResNet, BasicBlock, BottleNeck, conv1x1
 
 
-class ResNet_32(ResNet):
+class ResNet_32(nn.Module):
     def __init__(self, block: Type[Union[BasicBlock, BottleNeck]], nblock: list, nclass: int = 1000,
                  channels: list = [16, 32, 64], norm_layer: nn.Module = nn.BatchNorm2d, groups=1,
                  base_width=64):
-        super(ResNet_32, self).__init__(block, nblock, nclass)
+        super(ResNet_32, self).__init__()
         self.groups = groups
         self.base_width = base_width
         self.norm_layer = norm_layer
@@ -31,8 +31,35 @@ class ResNet_32(ResNet):
             x = layer(x)
         return self.fc(self.flatten(self.avgpool(x)))
 
+    def predict(self, x):
+        return self.forward(x)
 
-def get_model(model_name: str, device:str ='cpu', nclass=1000, zero_init_residual=False) -> nn.Module:
+    def register_layer(self):
+        for i, layer in enumerate(self.layers):
+            exec('self.layer{} = {}'.format(i + 1, 'layer'))
+
+    def make_layer(self, block: Type[Union[BasicBlock, BottleNeck]], nblock: int, channels: int) -> nn.Sequential:
+        layers = []
+        downsample = None
+        stride = 1
+        if self.in_channels != channels * block.factor:
+            stride = 2
+            downsample = nn.Sequential(
+                conv1x1(self.in_channels, channels * block.factor, stride=stride),
+                nn.BatchNorm2d(channels * block.factor)
+            )
+        for i in range(nblock):
+            if i == 1:
+                stride = 1
+                downsample = None
+                self.in_channels = channels * block.factor
+            layers.append(block(in_channels=self.in_channels, out_channels=channels,
+                                stride=stride, norm_layer=self.norm_layer, downsample=downsample,
+                                groups=self.groups, base_width=self.base_width))
+        return nn.Sequential(*layers)
+
+
+def get_model(model_name: str, nclass=1000, zero_init_residual=False) -> nn.Module:
     if model_name == 'resnet_32_20':
         model = ResNet_32(block=BasicBlock, nblock=[3, 3, 3], nclass=nclass)
     elif model_name == 'resnet_32_110':

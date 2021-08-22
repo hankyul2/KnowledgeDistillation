@@ -116,7 +116,7 @@ class ResNet(nn.Module):
         return self.fc(self.flatten(self.avgpool(x)))
 
 
-def get_model(model_name: str, device='cpu', nclass=1000, zero_init_residual=False, pretrained=False) -> nn.Module:
+def get_model(model_name: str, nclass=1000, zero_init_residual=False, pretrained=False) -> nn.Module:
     if model_name == 'resnet18':
         model = ResNet(block=BasicBlock, nblock=[2, 2, 2, 2], nclass=nclass)
     elif model_name == 'resnet34':
@@ -149,7 +149,7 @@ def get_model(model_name: str, device='cpu', nclass=1000, zero_init_residual=Fal
         Path(os.path.join('pretrained', model_name)).mkdir(parents=True, exist_ok=True)
         state_dict = load_state_dict_from_url(url=model_urls[model_name],
                                               model_dir=os.path.join('pretrained', model_name),
-                                              progress=True, map_location=device)
+                                              progress=True, map_location='cpu')
         model.load_state_dict(state_dict, strict=False)
 
     return model
