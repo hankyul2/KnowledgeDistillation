@@ -114,14 +114,14 @@ class BaseModelWrapper:
                     self.evaluate(test_dl)
                 self.save_best_weight(self.model, best_acc)
 
-            print('=' * 180)
+            print('=' * 150)
             self.log(
                 '[EPOCH]: {:03d}/{:03d}  |  train loss {:07.4f} acc {:07.4f}%  |  valid loss {:07.4f} acc {:07.4f}% ('
                 'best accuracy : {:07.4f} @ {:03d})'.format(
                     epoch + 1, nepoch, train_loss, train_acc * 100, valid_loss, valid_acc * 100, best_acc * 100,
                     best_acc_arg
                 ))
-            print('=' * 180)
+            print('=' * 150)
             self.log_tensorboard(epoch, train_loss, train_acc * 100, valid_loss, valid_acc * 100)
 
     @torch.no_grad()

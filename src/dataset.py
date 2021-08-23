@@ -1,8 +1,7 @@
 import torch
-
+from torchvision import transforms
 from torchvision.datasets import CIFAR10, CIFAR100
 
-import albumentations as A
 import numpy as np
 
 
@@ -34,13 +33,22 @@ def get_my_dataset(dataset_name, train):
         mean = (0.5071, 0.4865, 0.4409)
         std = (0.2673, 0.2564, 0.2762)
 
-    transforms_train_valid = A.Compose([
-        A.RandomSizedCrop([30, 32], 32, 32),
-        A.HorizontalFlip(),
-        A.Normalize(mean=mean, std=std)
+    train_transform = transforms.Compose([
+        transforms.Pad(4, padding_mode='reflect'),
+        transforms.RandomCrop(32),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std)
+    ])
+    test_transform = transforms.Compose([
+        transforms.CenterCrop(32),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std)
     ])
 
-    my_dataset = MyDataset(ds=dataset, transforms=transforms_train_valid)
+    transforms_fn = train_transform if train else test_transform
+
+    my_dataset = MyDataset(ds=dataset, transforms=transforms_fn)
 
     return my_dataset
 
@@ -60,6 +68,6 @@ class MyDataset(object):
         img, label = self.ds[idx]
 
         if self.transforms:
-            img = np.transpose(self.transforms(image=np.array(img))['image'], (2, 0, 1))
+            img = self.transforms(img)
 
         return img, label
