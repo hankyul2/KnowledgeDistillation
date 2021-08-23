@@ -72,10 +72,15 @@ class ResNet_32(nn.Module):
         x = self.relu(self.bn1(self.conv1(x)))
         for layer in self.layers:
             x = layer(x)
-        return self.fc(self.flatten(self.avgpool(x)))
+        feature = self.flatten(self.avgpool(x))
+        out = self.fc(feature)
+        return feature, out
 
     def predict(self, x):
-        return self.forward(x)
+        x = self.relu(self.bn1(self.conv1(x)))
+        for layer in self.layers:
+            x = layer(x)
+        return self.fc(self.flatten(self.avgpool(x)))
 
     def register_layer(self):
         for i, layer in enumerate(self.layers):

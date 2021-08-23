@@ -75,7 +75,7 @@ class BaseModelWrapper:
             data_time.update(time.time() - end)
 
             x, y = x.to(self.device), y.to(self.device)
-            y_hat = self.model(x)
+            y_hat = self.model.predict(x)
             loss = self.criterion(y_hat, y)
 
             acc1, acc5 = accuracy(y_hat, y, topk=(1, 5))
