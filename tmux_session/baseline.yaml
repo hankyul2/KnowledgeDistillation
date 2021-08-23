@@ -2,10 +2,10 @@ session_name: kd
 windows:
 - window_name: Train ResNet20 on Cifar 10
   panes:
-  - python3 main.py -g 4 -m resnet_32_20 -d cifar10
+  - python3 main.py -g 6 -m resnet_32_20 -d cifar10
 - window_name: Train ResNet20 on Cifar 100
   panes:
-  - python3 main.py -g 5 -m resnet_32_20 -d cifar100
+  - python3 main.py -g 7 -m resnet_32_20 -d cifar100
 - window_name: Train ResNet110 on Cifar 10
   panes:
   - python3 main.py -g 6 -m resnet_32_110 -d cifar10
