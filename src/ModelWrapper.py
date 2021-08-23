@@ -7,6 +7,8 @@ import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
+from src.utils import AverageMeter, ProgressMeter, accuracy
+
 
 class BaseModelWrapper:
     def __init__(self, log_name):
@@ -46,7 +48,7 @@ class BaseModelWrapper:
     def save_best_weight(self, model, top1_acc):
         if top1_acc > self.best_acc:
             self.best_acc = top1_acc
-            self.log('saving best model({:07.4f}%) weight to {}'.format(top1_acc*100, self.log_best_weight_path))
+            self.log('Saving best model({:07.4f}%) weight to {}'.format(top1_acc, self.log_best_weight_path))
             torch.save({'weight':model.state_dict(), 'top1_acc':top1_acc}, self.log_best_weight_path)
 
     def load_best_weight(self, path=None):
@@ -54,57 +56,84 @@ class BaseModelWrapper:
         if self.model is not None and self.device is not None:
             self.model.load_state_dict(torch.load(f=path, map_location=self.device)["weight"])
 
-    def train(self, train_dl):
-        self.model.train()
-        debug_step, total_step, total_loss, total_acc = len(train_dl)//10, len(train_dl), 0, 0
+    def train(self, train_dl, epoch):
+        debug_step = len(train_dl)//10
+        batch_time = AverageMeter('Time', ':6.3f')
+        data_time = AverageMeter('Data', ':6.3f')
+        losses = AverageMeter('Loss', ':7.4f')
+        top1 = AverageMeter('Acc@1', ':6.2f')
+        top5 = AverageMeter('Acc@5', ':6.2f')
+        progress = ProgressMeter(
+            len(train_dl),
+            [batch_time, data_time, losses, top1, top5],
+            prefix="TRAIN: [{}]".format(epoch))
 
+        self.model.train()
+
+        end = time.time()
         for step, (x, y) in enumerate(train_dl):
+            data_time.update(time.time() - end)
+
             x, y = x.to(self.device), y.to(self.device)
             y_hat = self.model(x)
             loss = self.criterion(y_hat, y)
+
+            acc1, acc5 = accuracy(y_hat, y, topk=(1, 5))
+            losses.update(loss.item(), x.size(0))
+            top1.update(acc1[0], x.size(0))
+            top5.update(acc5[0], x.size(0))
+
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            _, y_label = y_hat.max(dim=1)
-            acc = (y_label == y).sum().item() / len(y)
-            total_loss += loss.clone().detach().item()
-            total_acc += acc
+            batch_time.update(time.time() - end)
+            end = time.time()
 
             if step != 0 and step % debug_step == 0:
-                self.log(
-                    '[train] STEP: {:03d}/{:03d}  |  loss {:07.4f} acc {:07.4f}%'.
-                        format(step + 1, total_step, loss.clone().detach().item(), acc * 100))
+                progress.display(step)
 
-        return total_loss / total_step, total_acc / total_step
+        return losses.avg, top1.avg
 
     @torch.no_grad()
     def valid(self, dl):
+        debug_step = len(dl) // 10
+        batch_time = AverageMeter('Time', ':6.3f')
+        losses = AverageMeter('Loss', ':7.4f')
+        top1 = AverageMeter('Acc@1', ':6.2f')
+        top5 = AverageMeter('Acc@5', ':6.2f')
+        progress = ProgressMeter(
+            len(dl),
+            [batch_time, losses, top1, top5],
+            prefix='VALID: ')
+
         self.model.eval()
-        debug_step, total_step, total_loss, total_acc = len(dl)//10, len(dl), 0, 0
+
+        end = time.time()
         for step, (x, y) in enumerate(dl):
             x, y = x.float().to(self.device), y.long().to(self.device)
             y_hat = self.model.predict(x)
             loss = F.cross_entropy(y_hat, y)
 
-            _, y_label = y_hat.max(dim=1)
-            acc = (y_label == y).sum().item() / len(y)
+            acc1, acc5 = accuracy(y_hat, y, topk=(1, 5))
+            losses.update(loss.item(), x.size(0))
+            top1.update(acc1[0], x.size(0))
+            top5.update(acc5[0], x.size(0))
 
-            total_loss += loss.clone().detach().item()
-            total_acc += acc
+            batch_time.update(time.time() - end)
+            end = time.time()
 
             if step % debug_step == 0:
-                self.log('[valid] STEP: {:03d}/{:03d}  |  loss {:07.4f} acc {:07.4f}%'.
-                         format(step + 1, total_step, loss.clone().detach().item(), acc * 100))
+                progress.display(step)
 
-        return total_loss / total_step, total_acc / total_step
+        return losses.avg, top1.avg
 
     def fit(self, train_dl, valid_dl, test_dl=None, nepoch=50):
         best_acc = 0
         best_acc_arg = 0
 
         for epoch in range(nepoch):
-            train_loss, train_acc = self.train(train_dl)
+            train_loss, train_acc = self.train(train_dl, epoch)
             valid_loss, valid_acc = self.valid(valid_dl)
 
             if valid_acc > best_acc:
@@ -116,13 +145,13 @@ class BaseModelWrapper:
 
             print('=' * 150)
             self.log(
-                '[EPOCH]: {:03d}/{:03d}  |  train loss {:07.4f} acc {:07.4f}%  |  valid loss {:07.4f} acc {:07.4f}% ('
+                '[EPOCH]: {:03d}/{:03d}    train loss {:07.4f} acc {:07.4f}%    valid loss {:07.4f} acc {:07.4f}% ('
                 'best accuracy : {:07.4f} @ {:03d})'.format(
-                    epoch + 1, nepoch, train_loss, train_acc * 100, valid_loss, valid_acc * 100, best_acc * 100,
+                    epoch + 1, nepoch, train_loss, train_acc, valid_loss, valid_acc, best_acc,
                     best_acc_arg
                 ))
             print('=' * 150)
-            self.log_tensorboard(epoch, train_loss, train_acc * 100, valid_loss, valid_acc * 100)
+            self.log_tensorboard(epoch, train_loss, train_acc, valid_loss, valid_acc)
 
     @torch.no_grad()
     def evaluate(self, test_dl, ncrop=10):

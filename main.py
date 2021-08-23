@@ -9,7 +9,7 @@ from src.train import run
 
 parser = argparse.ArgumentParser(description='Knowledge Disillation')
 parser.add_argument('-g', '--gpu_id', type=str, default='', help='Enter which gpu you want to use')
-parser.add_argument('-s', '--seed', type=int, default=3, help='Enter random seed')
+parser.add_argument('-s', '--seed', type=int, default=None, help='Enter random seed')
 parser.add_argument('-m', '--model_name', type=str, default='resnet50', help='Enter model name')
 parser.add_argument('-d', '--dataset', type=str, default='cifar10', choices=['cifar10', 'cifar100'], help='Enter dataset')
 parser.add_argument('-b', '--batch_size', type=int, default=128, help='Enter batch size for train step')
@@ -20,9 +20,10 @@ parser.add_argument('--pre_trained', action='store_true', help='Enter whether yo
 
 
 def init(args):
-    np.random.seed(args.seed)
-    random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    if args.seed:
+        np.random.seed(args.seed)
+        random.seed(args.seed)
+        torch.manual_seed(args.seed)
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
     print('DEVICE: {}'.format('cpu' if args.gpu_id == '' else args.gpu_id))
 
