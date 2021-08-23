@@ -19,13 +19,18 @@ class ModelWrapper(BaseModelWrapper):
 
 
 class MyOpt:
-    def __init__(self, model, nbatch, lr=0.1, nepoch=200, weight_decay=1e-4, momentum=0.9):
+    def __init__(self, model, nbatch, lr=0.1, weight_decay=1e-4, momentum=0.9):
         self.optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
-        self.scheduler = LR.StepLR(self.optimizer, nbatch * (nepoch / 3), 0.1)
+        self.scheduler = LR.MultiStepLR(self.optimizer, milestones=[100, 150], gamma=0.1)
+        self.nbatch = nbatch
+        self.step_ = 0
 
     def step(self):
         self.optimizer.step()
-        self.scheduler.step()
+        self.step_ += 1
+        if self.step_ % self.nbatch == 0:
+            self.scheduler.step()
+            self.step_ = 0
 
     def zero_grad(self):
         self.optimizer.zero_grad()
@@ -39,7 +44,7 @@ def run(args):
 
     # step 2. load model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=True).to(device)
+    model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False).to(device)
 
     # step 3. prepare training tool
     criterion = nn.CrossEntropyLoss()
