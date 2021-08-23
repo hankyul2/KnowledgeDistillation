@@ -91,7 +91,7 @@ class BaseModelWrapper:
             end = time.time()
 
             if step != 0 and step % debug_step == 0:
-                progress.display(step)
+                self.log(progress.display(step))
 
         return losses.avg, top1.avg
 
@@ -124,7 +124,7 @@ class BaseModelWrapper:
             end = time.time()
 
             if step % debug_step == 0:
-                progress.display(step)
+                self.log(progress.display(step))
 
         return losses.avg, top1.avg
 
