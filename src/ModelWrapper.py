@@ -17,16 +17,16 @@ class BaseModelWrapper:
         self.device = None
         self.setup_directory()
         self.logger = logging.getLogger()
-        self.log_name = '{}-{}'.format(datetime.datetime.now(), log_name)
-        self.log_best_weight_path = 'log/best_weight/{}'.format(self.log_name)
+        self.log_name = '{}-{}'.format(datetime.datetime.now().strftime('%Y-%m-%d/%H-%M-%S'), log_name)
+        self.log_best_weight_path = 'log/best_weight/{}.pth'.format(self.log_name)
         self.writer = SummaryWriter(log_dir='log/tensor_board/{}'.format(self.log_name), filename_suffix=log_name)
-        self.setup_file_logger('log/text/{}-{}'.format(datetime.datetime.now(), log_name))
+        self.setup_file_logger('log/text/{}.txt'.format(self.log_name))
 
 
     def setup_directory(self):
-        Path('log/text').mkdir(exist_ok=True, parents=True)
-        Path('log/tensor_board').mkdir(exist_ok=True, parents=True)
-        Path('log/best_weight').mkdir(exist_ok=True, parents=True)
+        Path('log/text/{}'.format(datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
+        Path('log/tensor_board/{}'.format(datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
+        Path('log/best_weight/{}'.format(datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
 
     def setup_file_logger(self, log_file):
         hdlr = logging.FileHandler(log_file)
@@ -171,6 +171,6 @@ class BaseModelWrapper:
         _, y_label = total_y_hat.max(dim=1)
         total_acc = (y_label == total_y).sum().item() / len(total_y)
 
-        print('=' * 180)
+        print('=' * 150)
         self.log('[EVALUATE] {}-crop loss {:07.4f}  |  {}-crop acc {:07.4f}%'.format(ncrop, total_loss, ncrop, total_acc * 100))
-        print('=' * 180)
+        print('=' * 150)
