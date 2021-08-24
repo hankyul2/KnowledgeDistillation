@@ -16,7 +16,7 @@ parser.add_argument('-l', '--lr', type=float, default=0.1, help='Enter learning 
 parser.add_argument('-e', '--nepoch', type=int, default=200, help='Enter the number of epoch')
 parser.add_argument('-t', '--teacher_model', type=str, default='resnet_32_20', help='Enter teacher model name')
 parser.add_argument('-k', '--kd_method', type=str, default='base', choices=[
-    'base', 'logit'
+    'base', 'logit', 'st'
 ], help='Enter knowledge Distillation Method')
 
 
@@ -37,5 +37,7 @@ if __name__ == '__main__':
         from src.train import run
     elif args.kd_method == 'logit':
         from src.train_logit import run
+    elif args.kd_method == 'st':
+        from src.train_st import run
 
     run(args)
