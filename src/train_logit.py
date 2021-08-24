@@ -98,7 +98,7 @@ def run(args):
     # step 2. load model (student, teacher)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     student_model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False).to(device)
-    teacher_model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False,
+    teacher_model = get_model(args.teacher_model, nclass=len(train_ds.classes), zero_init_residual=False,
                               pretrained=args.teacher_model+'_'+args.dataset).to(device)
 
     # step 3. prepare training tool

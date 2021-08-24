@@ -1,11 +1,17 @@
-session_name: kd
+session_name: kd_logit
 windows:
 - window_name: Logits S-ResNet20 T-ResNet20 on Cifar10
   panes:
-  - python3 main.py -g 7 -m resnet_32_20 -d cifar10 -t resnet_32_20 -k logit
+  - python3 main.py -g 5 -m resnet_32_20 -d cifar10 -t resnet_32_20 -k logit
 - window_name: Logits S-ResNet20 T-ResNet20 on Cifar100
   panes:
-  - python3 main.py -g 7 -m resnet_32_20 -d Cifar100 -t resnet_32_20 -k logit
+  - python3 main.py -g 6 -m resnet_32_20 -d cifar100 -t resnet_32_20 -k logit
+- window_name: Logits S-ResNet20 T-ResNet20 on Cifar10
+  panes:
+  - python3 main.py -g 5 -m resnet_32_20 -d cifar10 -t resnet_32_110 -k logit
+- window_name: Logits S-ResNet20 T-ResNet20 on Cifar100
+  panes:
+  - python3 main.py -g 7 -m resnet_32_20 -d cifar100 -t resnet_32_110 -k logit
 - window_name: Tensorboard
   panes:
     - tensorboard --logdir=log/tensor_board
