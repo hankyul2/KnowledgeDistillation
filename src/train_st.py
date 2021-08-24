@@ -108,7 +108,7 @@ def run(args):
     optimizer = MyOpt(model=student_model, nbatch=len(train_dl), lr=args.lr)
 
     # step 4. train
-    model = ModelWrapper(args.model_name + '_' + args.dataset + '_' + args.teacher_model, model=student_model,
+    model = ModelWrapper(args.model_name + '_' + args.dataset + '_' + args.teacher_model + '_' + args.kd_method, model=student_model,
                          teacher_model=teacher_model, device=device, optimizer=optimizer, criterion=criterion, kd_criterion=kd_criterion)
     model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
 
