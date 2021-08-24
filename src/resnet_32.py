@@ -1,5 +1,6 @@
 from typing import Type, Union
 
+import torch
 from torch import nn
 import torch.nn.functional as F
 
@@ -107,7 +108,7 @@ class ResNet_32(nn.Module):
         return nn.Sequential(*layers)
 
 
-def get_model(model_name: str, nclass=1000, zero_init_residual=False) -> nn.Module:
+def get_model(model_name: str, nclass=1000, zero_init_residual=False, pretrained=False) -> nn.Module:
     if model_name == 'resnet_32_20':
         model = ResNet_32(block=BasicBlock, nblock=[3, 3, 3], nclass=nclass)
     elif model_name == 'resnet_32_110':
@@ -125,5 +126,14 @@ def get_model(model_name: str, nclass=1000, zero_init_residual=False) -> nn.Modu
             nn.init.constant_(m.bn3.weight, 0)
         elif isinstance(m, BasicBlock) and zero_init_residual:
             nn.init.constant_(m.bn2.weight, 0)
+
+    if pretrained:
+        model_path = {
+            'resnet_32_20_cifar10': 'log/best_weight/2021-08-23/12-23-49-resnet_32_20_cifar10',
+            'resnet_32_20_cifar100': 'log/best_weight/2021-08-23/12-23-48-resnet_32_20_cifar100',
+            'resnet_32_110_cifar10': 'log/best_weight/2021-08-23/12-23-49-resnet_32_110_cifar10',
+            'resnet_32_110_cifar100': 'log/best_weight/2021-08-23/12-23-49-resnet_32_110_cifar100',
+        }
+        model.load_state_dict(torch.load(model_path[pretrained], map_location='cpu')['weight'])
 
     return model

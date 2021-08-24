@@ -1,5 +1,4 @@
-import os
-from pathlib import Path
+import time
 
 import torch
 from easydict import EasyDict as edict
@@ -9,17 +8,67 @@ import torch.optim.lr_scheduler as LR
 
 from src.ModelWrapper import BaseModelWrapper
 from src.dataset import get_dataset, convert_to_dataloader
+from src.logits import Logits
 from src.resnet_32 import get_model
 
-import numpy as np
+from src.utils import AverageMeter, ProgressMeter, accuracy
+
 
 class ModelWrapper(BaseModelWrapper):
-    def __init__(self, log_name, model, device, criterion, optimizer):
+    def __init__(self, log_name, model, teacher_model, device, criterion, kd_criterion, optimizer):
         super().__init__(log_name)
         self.model = model
         self.device = device
         self.criterion = criterion
+        self.kd_criterion = kd_criterion
         self.optimizer = optimizer
+        self.teacher_model = teacher_model
+
+    def train(self, train_dl, epoch):
+        debug_step = len(train_dl)//10
+        batch_time = AverageMeter('Time', ':6.3f')
+        data_time = AverageMeter('Data', ':6.3f')
+        losses = AverageMeter('Total Loss', ':7.4f')
+        cls_losses = AverageMeter('CLS Loss', ':7.4f')
+        kd_losses = AverageMeter('KD Loss', ':7.4f')
+        top1 = AverageMeter('Acc@1', ':6.2f')
+        top5 = AverageMeter('Acc@5', ':6.2f')
+        progress = ProgressMeter(
+            len(train_dl),
+            [batch_time, data_time, losses, cls_losses, kd_losses, top1, top5],
+            prefix="TRAIN: [{}]".format(epoch))
+
+        self.model.train()
+
+        end = time.time()
+        for step, (x, y) in enumerate(train_dl):
+            data_time.update(time.time() - end)
+
+            x, y = x.to(self.device), y.to(self.device)
+            std_feat, std_y_hat = self.model(x)
+            teat_feat, _ = self.teacher_model(x)
+            cls_loss = self.criterion(std_y_hat, y)
+            kd_loss = self.kd_criterion(std_feat, teat_feat.detach())
+            loss = cls_loss + kd_loss
+
+            acc1, acc5 = accuracy(std_y_hat, y, topk=(1, 5))
+            losses.update(loss.item(), x.size(0))
+            cls_losses.update(cls_loss.item(), x.size(0))
+            kd_losses.update(kd_loss.item(), x.size(0))
+            top1.update(acc1[0], x.size(0))
+            top5.update(acc5[0], x.size(0))
+
+            loss.backward()
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            if step != 0 and step % debug_step == 0:
+                self.log(progress.display(step))
+
+        return losses.avg, top1.avg
 
 
 class MyOpt:
@@ -40,45 +89,27 @@ class MyOpt:
         self.optimizer.zero_grad()
 
 
-def get_teacher_dataset(teacher_model, dataset, kd_method):
-    model_path = {
-        'resnet_32_20_cifar10': 'log/best_weight/2021-08-23/12-23-49-resnet_32_20_cifar10',
-        'resnet_32_20_cifar100': 'log/best_weight/2021-08-23/12-23-48-resnet_32_20_cifar100',
-        'resnet_32_110_cifar10': 'log/best_weight/2021-08-23/12-23-49-resnet_32_110_cifar10',
-        'resnet_32_110_cifar100': 'log/best_weight/2021-08-23/12-23-49-resnet_32_110_cifar100',
-    }
-    teacher_model_path = model_path[teacher_model+'_'+dataset]
-    base_path = os.path.join('kd', '_'.join(teacher_model_path.split('/')[-2:]))
-    kd_np_path = os.path.join(base_path, kd_method + '.npy')
-    Path(base_path).mkdir(parents=True, exist_ok=True)
-    if os.path.exists(kd_np_path):
-        kd_np = np.load(kd_np_path)
-    else:
-        kd_np = make_kd_np(teacher_model_path, kd_np_path, kd_method)
-
-    return MyDataset(kd_np)
-
-
 def run(args):
-    # step 0. prepare teacher model output
-    teacher_ds = get_teacher_dataset(args.teacher_model, args.dataset, args.kd_method)
+    # step 1. load dataset
+    train_ds, valid_ds, test_ds = get_dataset(args.dataset)
+    train_dl, = convert_to_dataloader([train_ds], batch_size=args.batch_size, num_workers=args.num_workers, train=True)
+    valid_dl, test_dl = convert_to_dataloader([valid_ds, test_ds], batch_size=args.batch_size, num_workers=args.num_workers, train=False)
 
-    # # step 1. load dataset
-    # train_ds, valid_ds, test_ds = get_dataset(args.dataset)
-    # train_dl, = convert_to_dataloader([train_ds], batch_size=args.batch_size, num_workers=args.num_workers, train=True)
-    # valid_dl, test_dl = convert_to_dataloader([valid_ds, test_ds], batch_size=args.batch_size, num_workers=args.num_workers, train=False)
-    #
-    # # step 2. load model
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False).to(device)
-    #
-    # # step 3. prepare training tool
-    # criterion = nn.CrossEntropyLoss()
-    # optimizer = MyOpt(model=model, nbatch=len(train_dl), lr=args.lr)
-    #
-    # # step 4. train
-    # model = ModelWrapper(args.model_name + '_' + args.dataset, model=model, device=device, optimizer=optimizer, criterion=criterion)
-    # model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
+    # step 2. load model (student, teacher)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    student_model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False).to(device)
+    teacher_model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False,
+                              pretrained=args.teacher_model+'_'+args.dataset).to(device)
+
+    # step 3. prepare training tool
+    criterion = nn.CrossEntropyLoss()
+    kd_criterion = Logits()
+    optimizer = MyOpt(model=student_model, nbatch=len(train_dl), lr=args.lr)
+
+    # step 4. train
+    model = ModelWrapper(args.model_name + '_' + args.dataset + '_' + args.teacher_model, model=student_model,
+                         teacher_model=teacher_model, device=device, optimizer=optimizer, criterion=criterion, kd_criterion=kd_criterion)
+    model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
 
 if __name__ == '__main__':
     # this is for jupyter users
