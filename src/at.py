@@ -8,7 +8,7 @@ def act2attn(activation, p=2, norm=False):
     activation = activation.pow(p).mean(dim=1)
     if norm:
         activation = F.normalize(rearrange(activation, 'b h w -> b (h w)'), dim=1)
-    return
+    return activation
 
 
 class AT(nn.Module):
@@ -18,6 +18,6 @@ class AT(nn.Module):
         self.p = p
 
     def forward(self, act_s_list, act_t_list):
-        loss = [F.mse_loss(act2attn(s, self.p, norm=True), act2attn(t, self.p, norm=True)) for s, t in
+        loss = [F.mse_loss(act2attn(s, self.p, norm=True), act2attn(t.detach(), self.p, norm=True)) for s, t in
                 zip(act_s_list, act_t_list)]
         return torch.stack(loss, dim=0).sum(dim=0) * self.beta
