@@ -46,8 +46,8 @@ class ModelWrapper(BaseModelWrapper):
             data_time.update(time.time() - end)
 
             x, y = x.to(self.device), y.to(self.device)
-            std_feat, std_y_hat = self.model(x)
-            teat_feat, teat_y_hat = self.teacher_model(x)
+            _, std_feat, std_y_hat = self.model(x)
+            _, teat_feat, teat_y_hat = self.teacher_model(x)
             cls_loss = self.criterion(std_y_hat, y)
             kd_loss = self.kd_criterion(std_y_hat, teat_y_hat.detach())
             loss = cls_loss + kd_loss

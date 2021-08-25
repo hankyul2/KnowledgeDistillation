@@ -71,11 +71,13 @@ class ResNet_32(nn.Module):
 
     def forward(self, x):
         x = self.relu(self.bn1(self.conv1(x)))
+        activations = []
         for layer in self.layers:
             x = layer(x)
+            activations.append(x)
         feature = self.flatten(self.avgpool(x))
         out = self.fc(feature)
-        return feature, out
+        return activations, feature, out
 
     def predict(self, x):
         x = self.relu(self.bn1(self.conv1(x)))
