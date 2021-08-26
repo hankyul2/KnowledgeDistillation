@@ -14,7 +14,7 @@ parser.add_argument('-b', '--batch_size', type=int, default=128, help='Enter bat
 parser.add_argument('-w', '--num_workers', type=int, default=4, help='Enter the number of workers per dataloader')
 parser.add_argument('-l', '--lr', type=float, default=0.1, help='Enter learning rate')
 parser.add_argument('-e', '--nepoch', type=int, default=200, help='Enter the number of epoch')
-parser.add_argument('-t', '--teacher_model', type=str, default='resnet_32_20', help='Enter teacher model name')
+parser.add_argument('-t', '--teacher_model', type=str, default='', help='Enter teacher model name')
 parser.add_argument('-k', '--kd_method', type=str, default='base', choices=[
     'base', 'logit', 'st', 'at'
 ], help='Enter knowledge Distillation Method')

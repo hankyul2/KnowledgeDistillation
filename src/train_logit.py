@@ -8,6 +8,7 @@ import torch.optim.lr_scheduler as LR
 
 from src.ModelWrapper import BaseModelWrapper
 from src.dataset import get_dataset, convert_to_dataloader
+from src.log import get_log_name
 from src.logits import Logits
 from src.resnet_32 import get_model
 
@@ -24,51 +25,25 @@ class ModelWrapper(BaseModelWrapper):
         self.optimizer = optimizer
         self.teacher_model = teacher_model
 
-    def train(self, train_dl, epoch):
-        debug_step = len(train_dl)//10
-        batch_time = AverageMeter('Time', ':6.3f')
-        data_time = AverageMeter('Data', ':6.3f')
-        losses = AverageMeter('Total Loss', ':7.4f')
-        cls_losses = AverageMeter('CLS Loss', ':7.4f')
-        kd_losses = AverageMeter('KD Loss', ':7.4f')
-        top1 = AverageMeter('Acc@1', ':6.2f')
-        top5 = AverageMeter('Acc@5', ':6.2f')
-        progress = ProgressMeter(
-            len(train_dl),
-            [batch_time, data_time, losses, cls_losses, kd_losses, top1, top5],
-            prefix="TRAIN: [{}]".format(epoch))
+    def forward(self, x, y):
+        _, std_feat, std_y_hat = self.model(x)
+        _, teat_feat, _ = self.teacher_model(x)
+        cls_loss = self.criterion(std_y_hat, y)
+        kd_loss = self.kd_criterion(std_feat, teat_feat.detach())
+        loss = cls_loss + kd_loss
 
-        self.model.train()
+        self.cls_losses.update(cls_loss.item(), x.size(0))
+        self.kd_losses.update(kd_loss.item(), x.size(0))
 
-        end = time.time()
-        for step, (x, y) in enumerate(train_dl):
-            data_time.update(time.time() - end)
+        return loss, std_y_hat
 
-            x, y = x.to(self.device), y.to(self.device)
-            _, std_feat, std_y_hat = self.model(x)
-            _, teat_feat, _ = self.teacher_model(x)
-            cls_loss = self.criterion(std_y_hat, y)
-            kd_loss = self.kd_criterion(std_feat, teat_feat.detach())
-            loss = cls_loss + kd_loss
-
-            acc1, acc5 = accuracy(std_y_hat, y, topk=(1, 5))
-            losses.update(loss.item(), x.size(0))
-            cls_losses.update(cls_loss.item(), x.size(0))
-            kd_losses.update(kd_loss.item(), x.size(0))
-            top1.update(acc1[0], x.size(0))
-            top5.update(acc5[0], x.size(0))
-
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if step != 0 and step % debug_step == 0:
-                self.log(progress.display(step))
-
-        return losses.avg, top1.avg
+    def init_progress(self, dl, epoch=None, mode='train'):
+        super().init_progress(dl, epoch, mode)
+        if mode == 'train':
+            self.cls_losses = AverageMeter('CLS Loss', ':7.4f')
+            self.kd_losses = AverageMeter('KD Loss', ':7.4f')
+            self.progress.meters = [self.batch_time, self.data_time, self.losses, self.cls_losses,
+                                    self.kd_losses, self.top1, self.top5]
 
 
 class MyOpt:
@@ -107,8 +82,8 @@ def run(args):
     optimizer = MyOpt(model=student_model, nbatch=len(train_dl), lr=args.lr)
 
     # step 4. train
-    model = ModelWrapper(args.model_name + '_' + args.dataset + '_' + args.teacher_model + '_' + args.kd_method, model=student_model,
-                         teacher_model=teacher_model, device=device, optimizer=optimizer, criterion=criterion, kd_criterion=kd_criterion)
+    model = ModelWrapper(log_name=get_log_name(args), model=student_model, teacher_model=teacher_model,
+                         device=device, optimizer=optimizer, criterion=criterion, kd_criterion=kd_criterion)
     model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
 
 if __name__ == '__main__':

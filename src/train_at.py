@@ -1,5 +1,3 @@
-import time
-
 import torch
 from easydict import EasyDict as edict
 from torch import nn
@@ -9,11 +7,11 @@ import torch.optim.lr_scheduler as LR
 from src.ModelWrapper import BaseModelWrapper
 from src.at import AT
 from src.dataset import get_dataset, convert_to_dataloader
-from src.logits import Logits
 from src.resnet_32 import get_model
 from src.st import ST
 
-from src.utils import AverageMeter, ProgressMeter, accuracy
+from src.utils import AverageMeter
+from src.log import get_log_name
 
 
 class ModelWrapper(BaseModelWrapper):
@@ -26,53 +24,27 @@ class ModelWrapper(BaseModelWrapper):
         self.optimizer = optimizer
         self.teacher_model = teacher_model
 
-    def train(self, train_dl, epoch):
-        debug_step = len(train_dl) // 10
-        batch_time = AverageMeter('Time', ':6.3f')
-        data_time = AverageMeter('Data', ':6.3f')
-        losses = AverageMeter('Total Loss', ':7.4f')
-        cls_losses = AverageMeter('CLS Loss', ':7.4f')
-        at_losses = AverageMeter('AT Loss', ':7.4f')
-        st_losses = AverageMeter('ST Loss', ':7.4f')
-        top1 = AverageMeter('Acc@1', ':6.2f')
-        top5 = AverageMeter('Acc@5', ':6.2f')
-        progress = ProgressMeter(
-            len(train_dl),
-            [batch_time, data_time, losses, cls_losses, at_losses, st_losses, top1, top5],
-            prefix="TRAIN: [{}]".format(epoch))
+    def forward(self, x, y):
+        std_act, std_feat, std_y_hat = self.model(x)
+        teat_act, teat_feat, teat_y_hat = self.teacher_model(x)
+        cls_loss = self.criterion(std_y_hat, y)
+        at_loss, st_loss = self.kd_criterion(std_act, teat_act, std_y_hat, teat_y_hat.detach())
+        loss = cls_loss + at_loss + st_loss
 
-        self.model.train()
+        self.cls_losses.update(cls_loss.item(), x.size(0))
+        self.at_losses.update(at_loss.item(), x.size(0))
+        self.st_losses.update(st_loss.item(), x.size(0))
 
-        end = time.time()
-        for step, (x, y) in enumerate(train_dl):
-            data_time.update(time.time() - end)
+        return loss, std_y_hat
 
-            x, y = x.to(self.device), y.to(self.device)
-            std_act, std_feat, std_y_hat = self.model(x)
-            teat_act, teat_feat, teat_y_hat = self.teacher_model(x)
-            cls_loss = self.criterion(std_y_hat, y)
-            at_loss, st_loss = self.kd_criterion(std_act, teat_act, std_y_hat, teat_y_hat.detach())
-            loss = cls_loss + at_loss + st_loss
-
-            acc1, acc5 = accuracy(std_y_hat, y, topk=(1, 5))
-            losses.update(loss.item(), x.size(0))
-            cls_losses.update(cls_loss.item(), x.size(0))
-            at_losses.update(at_loss.item(), x.size(0))
-            st_losses.update(st_loss.item(), x.size(0))
-            top1.update(acc1[0], x.size(0))
-            top5.update(acc5[0], x.size(0))
-
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if step != 0 and step % debug_step == 0:
-                self.log(progress.display(step))
-
-        return losses.avg, top1.avg
+    def init_progress(self, dl, epoch=None, mode='train'):
+        super().init_progress(dl, epoch, mode)
+        if mode == 'train':
+            self.at_losses = AverageMeter('AT Loss', ':7.4f')
+            self.st_losses = AverageMeter('ST Loss', ':7.4f')
+            self.cls_losses = AverageMeter('CLS Loss', ':7.4f')
+            self.progress.meters = [self.batch_time, self.data_time, self.losses, self.cls_losses,
+                                    self.at_losses, self.st_losses, self.top1, self.top5]
 
 
 class MyCriterion(nn.Module):
@@ -125,10 +97,8 @@ def run(args):
     optimizer = MyOpt(model=student_model, nbatch=len(train_dl), lr=args.lr)
 
     # step 4. train
-    model = ModelWrapper(args.model_name + '_' + args.dataset + '_' + args.teacher_model + '_' + args.kd_method,
-                         model=student_model,
-                         teacher_model=teacher_model, device=device, optimizer=optimizer, criterion=criterion,
-                         kd_criterion=kd_criterion)
+    model = ModelWrapper(log_name=get_log_name(args), model=student_model, teacher_model=teacher_model,
+                         device=device, optimizer=optimizer, criterion=criterion, kd_criterion=kd_criterion)
     model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
 
 

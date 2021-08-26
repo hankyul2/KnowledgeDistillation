@@ -56,57 +56,59 @@ class BaseModelWrapper:
         if self.model is not None and self.device is not None:
             self.model.load_state_dict(torch.load(f=path, map_location=self.device)["weight"])
 
-    def train(self, train_dl, epoch):
-        debug_step = len(train_dl)//10
-        batch_time = AverageMeter('Time', ':6.3f')
-        data_time = AverageMeter('Data', ':6.3f')
-        losses = AverageMeter('Loss', ':7.4f')
-        top1 = AverageMeter('Acc@1', ':6.2f')
-        top5 = AverageMeter('Acc@5', ':6.2f')
-        progress = ProgressMeter(
-            len(train_dl),
-            [batch_time, data_time, losses, top1, top5],
-            prefix="TRAIN: [{}]".format(epoch))
+    def init_progress(self, dl, epoch=None, mode='train'):
+        self.batch_time = AverageMeter('Time', ':6.3f')
+        self.data_time = AverageMeter('Data', ':6.3f')
+        self.losses = AverageMeter('Total Loss', ':7.4f')
+        self.top1 = AverageMeter('Acc@1', ':6.2f')
+        self.top5 = AverageMeter('Acc@5', ':6.2f')
 
+        if mode == 'train':
+            self.progress = ProgressMeter(
+                len(dl),
+                [self.batch_time, self.data_time, self.losses, self.top1, self.top5],
+                prefix="TRAIN: [{}]".format(epoch))
+        elif mode == 'valid':
+            self.progress = ProgressMeter(len(dl), [self.batch_time, self.losses, self.top1, self.top5],
+                                          prefix='VALID: ')
+
+    def forward(self, x, y):
+        std_act, std_feat, std_y_hat = self.model(x)
+        return self.criterion(std_y_hat, y), std_y_hat
+
+    def train(self, train_dl, epoch):
+        debug_step = len(train_dl) // 10
+        self.init_progress(train_dl, epoch=epoch, mode='train')
         self.model.train()
 
         end = time.time()
         for step, (x, y) in enumerate(train_dl):
-            data_time.update(time.time() - end)
+            self.data_time.update(time.time() - end)
 
             x, y = x.to(self.device), y.to(self.device)
-            y_hat = self.model.predict(x)
-            loss = self.criterion(y_hat, y)
+            loss, std_y_hat = self.forward(x, y)
 
-            acc1, acc5 = accuracy(y_hat, y, topk=(1, 5))
-            losses.update(loss.item(), x.size(0))
-            top1.update(acc1[0], x.size(0))
-            top5.update(acc5[0], x.size(0))
+            acc1, acc5 = accuracy(std_y_hat, y, topk=(1, 5))
+            self.losses.update(loss.item(), x.size(0))
+            self.top1.update(acc1[0], x.size(0))
+            self.top5.update(acc5[0], x.size(0))
 
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
 
-            batch_time.update(time.time() - end)
+            self.batch_time.update(time.time() - end)
             end = time.time()
 
             if step != 0 and step % debug_step == 0:
-                self.log(progress.display(step))
+                self.log(self.progress.display(step))
 
-        return losses.avg, top1.avg
+        return self.losses.avg, self.top1.avg
 
     @torch.no_grad()
     def valid(self, dl):
         debug_step = len(dl) // 10
-        batch_time = AverageMeter('Time', ':6.3f')
-        losses = AverageMeter('Loss', ':7.4f')
-        top1 = AverageMeter('Acc@1', ':6.2f')
-        top5 = AverageMeter('Acc@5', ':6.2f')
-        progress = ProgressMeter(
-            len(dl),
-            [batch_time, losses, top1, top5],
-            prefix='VALID: ')
-
+        self.init_progress(dl, mode='valid')
         self.model.eval()
 
         end = time.time()
@@ -116,17 +118,17 @@ class BaseModelWrapper:
             loss = F.cross_entropy(y_hat, y)
 
             acc1, acc5 = accuracy(y_hat, y, topk=(1, 5))
-            losses.update(loss.item(), x.size(0))
-            top1.update(acc1[0], x.size(0))
-            top5.update(acc5[0], x.size(0))
+            self.losses.update(loss.item(), x.size(0))
+            self.top1.update(acc1[0], x.size(0))
+            self.top5.update(acc5[0], x.size(0))
 
-            batch_time.update(time.time() - end)
+            self.batch_time.update(time.time() - end)
             end = time.time()
 
             if step % debug_step == 0:
-                self.log(progress.display(step))
+                self.log(self.progress.display(step))
 
-        return losses.avg, top1.avg
+        return self.losses.avg, self.top1.avg
 
     def fit(self, train_dl, valid_dl, test_dl=None, nepoch=50):
         best_acc = 0
