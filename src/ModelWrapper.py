@@ -15,18 +15,18 @@ class BaseModelWrapper:
         self.best_acc = 0
         self.model = None
         self.device = None
-        self.setup_directory()
         self.logger = logging.getLogger()
-        self.log_name = '{}-{}'.format(datetime.datetime.now().strftime('%Y-%m-%d/%H-%M-%S'), log_name)
+        self.setup_directory(log_name)
+        self.log_name = '{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d/%H-%M-%S'))
         self.log_best_weight_path = 'log/best_weight/{}.pth'.format(self.log_name)
-        self.writer = SummaryWriter(log_dir='log/tensor_board/{}'.format(self.log_name), filename_suffix=log_name)
+        self.writer = SummaryWriter(log_dir='log/tensor_board/{}'.format(self.log_name), filename_suffix=log_name.replace('/', '_'))
         self.setup_file_logger('log/text/{}.txt'.format(self.log_name))
 
 
-    def setup_directory(self):
-        Path('log/text/{}'.format(datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
-        Path('log/tensor_board/{}'.format(datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
-        Path('log/best_weight/{}'.format(datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
+    def setup_directory(self, log_name):
+        Path('log/text/{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
+        Path('log/tensor_board/{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
+        Path('log/best_weight/{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
 
     def setup_file_logger(self, log_file):
         hdlr = logging.FileHandler(log_file)

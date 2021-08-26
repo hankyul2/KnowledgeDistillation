@@ -6,9 +6,9 @@ import torch.optim.lr_scheduler as LR
 
 from src.ModelWrapper import BaseModelWrapper
 from src.at import AT
+from src.st import ST
 from src.dataset import get_dataset, convert_to_dataloader
 from src.resnet_32 import get_model
-from src.st import ST
 
 from src.utils import AverageMeter
 from src.log import get_log_name
@@ -27,6 +27,7 @@ class ModelWrapper(BaseModelWrapper):
     def forward(self, x, y):
         std_act, std_feat, std_y_hat = self.model(x)
         teat_act, teat_feat, teat_y_hat = self.teacher_model(x)
+
         cls_loss = self.criterion(std_y_hat, y)
         at_loss, st_loss = self.kd_criterion(std_act, teat_act, std_y_hat, teat_y_hat.detach())
         loss = cls_loss + at_loss + st_loss
