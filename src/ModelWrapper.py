@@ -17,9 +17,9 @@ class BaseModelWrapper:
         self.model = None
         self.device = None
         self.logger = logging.getLogger()
-        self.identity = setup_directory(log_name)
+        setup_directory(log_name)
         self.time = datetime.datetime.now().strftime('%Y-%m-%d/%H-%M-%S')
-        self.log_name = '{}/{}({})'.format(log_name, self.time, self.identity)
+        self.log_name = '{}/{}'.format(log_name, self.time)
         self.log_best_weight_path = 'log/best_weight/{}.pth'.format(self.log_name)
         self.writer = SummaryWriter(log_dir='log/tensor_board/{}'.format(self.log_name),
                                     filename_suffix=log_name.replace('/', '_'))

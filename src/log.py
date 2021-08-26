@@ -6,6 +6,8 @@ import shutil
 from glob import glob
 from pathlib import Path
 
+from filelock import FileLock
+
 
 class Result:
     def __init__(self, result_path='log/result.csv', best_result_path='result/best_result'):
@@ -26,12 +28,8 @@ class Result:
         return 11
 
     @property
-    def is_available(self):
-        return 12
-
-    @property
     def weight_path(self):
-        return 13
+        return 12
 
     def setup(self):
         Path(self.best_result_save_path).mkdir(exist_ok=True, parents=True)
@@ -55,10 +53,9 @@ class Result:
                 writer.writerow(row)
 
     def arg2result(self, args, model):
-        result = [model.identity, args.kd_method, args.dataset, args.model_name, args.teacher_model, model.time,
-                  model.best_acc, model.best_epoch, args.nepoch, args.lr, args.batch_size, False, True,
-                  model.log_best_weight_path]
-        return result
+        return [self.get_no(), args.kd_method, args.dataset, args.model_name, args.teacher_model, model.time,
+                model.best_acc, model.best_epoch, args.nepoch, args.lr, args.batch_size, False,
+                model.log_best_weight_path]
 
     def get_no(self):
         csv_list, csv_dict = self.read_result()
@@ -68,16 +65,12 @@ class Result:
         csv_list, csv_dict = self.read_result()
         return csv_list[no][self.is_best] == 'True'
 
-    def check_is_available_false(self, no):
-        csv_list, csv_dict = self.read_result()
-        csv_list[no][self.is_available] == False
-        self.write_csv(self.result_path, csv_list, mode='w')
-
     def save_result(self, args, model):
-        result = self.arg2result(args, model)
-        self.write_csv(self.result_path, [result], mode='a')
-        best_result, best_idx = self.get_best_result_and_idx(result)
-        self.save_best_result(args, best_idx, best_result)
+        with FileLock("{}.lock".format(self.result_path)):
+            result = self.arg2result(args, model)
+            self.write_csv(self.result_path, [result], mode='a')
+            best_result, best_idx = self.get_best_result_and_idx(result)
+            self.save_best_result(args, best_idx, best_result)
 
     def save_best_result(self, args, best_idx, best_result):
         if len(best_result) == 3:
@@ -90,7 +83,7 @@ class Result:
 
     def get_headers(self):
         headers = [['no', 'method', 'dataset', 'student', 'teacher', 'start_time', 'acc', 'epoch', 'nepoch',
-                    'lr', 'batch_size', 'is_best', 'weight_available', 'model_weight_path']]
+                    'lr', 'batch_size', 'is_best', 'model_weight_path']]
         return headers
 
     def get_best_result_and_idx(self, result):
@@ -114,10 +107,14 @@ class Result:
     def get_best_model(self, model_name, pretrained_dataset):
         result = [0, 'base', pretrained_dataset, model_name]
         models = max(self.get_same_list(result, start_end=(1, 4)),
-                     key=lambda xs: float(xs[self.acc]) and xs[self.is_available] == 'True')
+                     key=lambda xs: float(xs[self.acc]))
         if len(models) < 1:
             assert Exception('Base model are not prepared yet')
         return models[self.weight_path]
+
+    def get_best_model_weight_path(self):
+        csv_list, csv_dict = self.read_result()
+        return list(map(lambda x: strip_log_name(x[self.weight_path]), filter(lambda xs: xs[self.is_best] == 'True', csv_list)))
 
 
 def get_base_model(model_name, pretrained_dataset):
@@ -130,15 +127,13 @@ def get_log_name(args, log_format='{}/{}/{}_{}'):
 
 
 def is_best_result_log(log_file_path):
-    result_saver = Result()
-    no = int(re.findall('\\((.*?)\\)', log_file_path)[0])
-    return result_saver.check_is_best(no)
+    log_name = strip_log_name(log_file_path)
+    best_model_path = Result().get_best_model_weight_path()
+    return log_name in best_model_path
 
 
-def mark_as_removed(log_file_path):
-    result_saver = Result()
-    no = int(re.findall('\\((.*?)\\)', log_file_path)[0])
-    result_saver.check_is_available_false(no)
+def strip_log_name(log_file_path):
+    return ''.join(log_file_path.split('.')[0].split('/')[2:])
 
 
 def clear_unused_log(file_path, max_log_len=10):
@@ -148,7 +143,6 @@ def clear_unused_log(file_path, max_log_len=10):
         keep_log = is_best_result_log(log_file_path)
         print("It {} is best result log?  {}".format(log_file_path, 'Yes' if keep_log else 'No'))
         if not keep_log:
-            mark_as_removed(log_file_path)
             log_file = Path(log_file_path)
             if log_file.exists():
                 if log_file.is_dir():
@@ -164,7 +158,6 @@ def setup_directory(log_name):
             prefix, log_name, date)
         ).mkdir(exist_ok=True, parents=True)
         clear_unused_log('log/{}/{}'.format(prefix, log_name))
-    return Result().get_no()
 
 
 if __name__ == '__main__':
