@@ -30,16 +30,17 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 
 - If you click the method name, it will link to the page for summarizing methods with summary of original paper and applied result. 
 - If you click the TensorBoard, you can see the training and test log for each benchmark in online.
+- scores are calculated by averaging 3 times results
 
-| Dataset     | CIFAR 10        | CIFAR 10          | CIFAR 100       | CIFAR 100         | avg  |
-| ----------- | --------------- | ----------------- | --------------- | ----------------- | ---- |
-| **Model**   | ResNet (20->20) | ResNet (110->110) | ResNet (20->20) | ResNet (110->100) |      |
-| baseline    | ResNet20        |                   |                 |                   |      |
-| Logits      |                 |                   |                 |                   |      |
-| ST          |                 |                   |                 |                   |      |
-| AT          |                 |                   |                 |                   |      |
-| ST + AT     |                 |                   |                 |                   |      |
-| Tensorboard |                 |                   |                 |                   |      |
+| Dataset           | CIFAR 10   | CIFAR 10   | CIFAR 100  | CIFAR 100  | avg  |
+| ----------------- | ---------- | ---------- | ---------- | ---------- | ---- |
+| **Model(ResNet)** | 20 >> 20   | 110 >> 110 | 20 >> 20   | 110 >> 100 |      |
+| baseline          | 92.0       | 92.5       | 67.6       | 71.6       | 80.9 |
+| Logits            | 92.5(+0.5) |            | 69.2(+1.6) |            |      |
+| ST                |            |            |            |            |      |
+| AT                |            |            |            |            |      |
+| ST + AT           |            |            |            |            |      |
+| Tensorboard       |            |            |            |            |      |
 
 
 
