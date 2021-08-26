@@ -48,8 +48,10 @@ class ModelWrapper(BaseModelWrapper):
 
 
 class MyCriterion(nn.Module):
-    def __init__(self, alpha=0.9, beta=1e+3):
+    def __init__(self, method, alpha=0.9, beta=1e+3):
         super(MyCriterion, self).__init__()
+        if method == 'at':
+            alpha = 0
         self.at = AT(beta=beta)
         self.st = ST(alpha=alpha)
 
@@ -93,7 +95,7 @@ def run(args):
 
     # step 3. prepare training tool
     criterion = nn.CrossEntropyLoss()
-    kd_criterion = MyCriterion()
+    kd_criterion = MyCriterion(method=args.kd_method)
     optimizer = MyOpt(model=student_model, nbatch=len(train_dl), lr=args.lr)
 
     # step 4. train
