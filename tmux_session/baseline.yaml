@@ -2,16 +2,16 @@ session_name: kd
 windows:
 - window_name: Train ResNet20 on Cifar 10
   panes:
-  - python3 main.py -g 5 -m resnet_32_20 -d cifar10 -k base
+  - python3 main.py -g 5 -m resnet_32_20 -d cifar10 -k base -i 3
 - window_name: Train ResNet20 on Cifar 100
   panes:
-  - python3 main.py -g 6 -m resnet_32_20 -d cifar100 -k base
+  - python3 main.py -g 6 -m resnet_32_20 -d cifar100 -k base -i 3
 - window_name: Train ResNet110 on Cifar 10
   panes:
-  - python3 main.py -g 5 -m resnet_32_110 -d cifar10 -k base
+  - python3 main.py -g 5 -m resnet_32_110 -d cifar10 -k base -i 3
 - window_name: Train ResNet110 on Cifar 100
   panes:
-    - python3 main.py -g 6 -m resnet_32_110 -d cifar100 -k base
+    - python3 main.py -g 6 -m resnet_32_110 -d cifar100 -k base -i 3
 - window_name: Tensorboard
   panes:
     - tensorboard --logdir=log/tensor_board

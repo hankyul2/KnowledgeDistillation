@@ -11,7 +11,7 @@ from src.dataset import get_dataset, convert_to_dataloader
 from src.resnet_32 import get_model
 
 from src.utils import AverageMeter
-from src.log import get_log_name
+from src.log import get_log_name, Result
 
 
 class ModelWrapper(BaseModelWrapper):
@@ -92,7 +92,7 @@ def run(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     student_model = get_model(args.model_name, nclass=len(train_ds.classes), zero_init_residual=False).to(device)
     teacher_model = get_model(args.teacher_model, nclass=len(train_ds.classes), zero_init_residual=False,
-                              pretrained=args.teacher_model + '_' + args.dataset).to(device)
+                              pretrained_dataset=args.dataset).to(device)
 
     # step 3. prepare training tool
     criterion = nn.CrossEntropyLoss()
@@ -103,6 +103,10 @@ def run(args):
     model = ModelWrapper(log_name=get_log_name(args), model=student_model, teacher_model=teacher_model,
                          device=device, optimizer=optimizer, criterion=criterion, kd_criterion=kd_criterion)
     model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
+
+    # (extra) step 5. save result
+    result_saver = Result()
+    result_saver.save_result(args, model)
 
 
 if __name__ == '__main__':

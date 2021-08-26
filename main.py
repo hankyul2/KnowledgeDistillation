@@ -18,6 +18,7 @@ parser.add_argument('-t', '--teacher_model', type=str, default='', help='Enter t
 parser.add_argument('-k', '--kd_method', type=str, default='base', choices=[
     'base', 'logit', 'st', 'at', 'at_st'
 ], help='Enter knowledge Distillation Method')
+parser.add_argument('-i', '--iter', type=int, default=1, help='Enter the number of iteration')
 
 
 def init(args):
@@ -42,4 +43,5 @@ if __name__ == '__main__':
     elif args.kd_method in ['at', 'at_st']:
         from src.train_at import run
 
-    run(args)
+    for i in range(args.iter):
+        run(args)

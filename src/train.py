@@ -6,7 +6,7 @@ import torch.optim.lr_scheduler as LR
 
 from src.ModelWrapper import BaseModelWrapper
 from src.dataset import get_dataset, convert_to_dataloader
-from src.log import get_log_name
+from src.log import get_log_name, Result
 from src.resnet_32 import get_model
 
 
@@ -54,6 +54,11 @@ def run(args):
     # step 4. train
     model = ModelWrapper(log_name=get_log_name(args), model=model, device=device, optimizer=optimizer, criterion=criterion)
     model.fit(train_dl, valid_dl, test_dl=None, nepoch=args.nepoch)
+
+    # (extra) step 5. save result
+    result_saver = Result()
+    result_saver.save_result(args, model)
+
 
 if __name__ == '__main__':
     # this is for jupyter users

@@ -1,32 +1,29 @@
 import time
 import datetime
 import logging
-from pathlib import Path
 
 import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
+from src.log import setup_directory
 from src.utils import AverageMeter, ProgressMeter, accuracy
 
 
 class BaseModelWrapper:
     def __init__(self, log_name):
         self.best_acc = 0
+        self.best_epoch = 0
         self.model = None
         self.device = None
         self.logger = logging.getLogger()
-        self.setup_directory(log_name)
-        self.log_name = '{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d/%H-%M-%S'))
+        self.identity = setup_directory(log_name)
+        self.time = datetime.datetime.now().strftime('%Y-%m-%d/%H-%M-%S')
+        self.log_name = '{}/{}({})'.format(log_name, self.time, self.identity)
         self.log_best_weight_path = 'log/best_weight/{}.pth'.format(self.log_name)
-        self.writer = SummaryWriter(log_dir='log/tensor_board/{}'.format(self.log_name), filename_suffix=log_name.replace('/', '_'))
+        self.writer = SummaryWriter(log_dir='log/tensor_board/{}'.format(self.log_name),
+                                    filename_suffix=log_name.replace('/', '_'))
         self.setup_file_logger('log/text/{}.txt'.format(self.log_name))
-
-
-    def setup_directory(self, log_name):
-        Path('log/text/{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
-        Path('log/tensor_board/{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
-        Path('log/best_weight/{}/{}'.format(log_name, datetime.datetime.now().strftime('%Y-%m-%d'))).mkdir(exist_ok=True, parents=True)
 
     def setup_file_logger(self, log_file):
         hdlr = logging.FileHandler(log_file)
@@ -45,11 +42,12 @@ class BaseModelWrapper:
         self.writer.add_scalar('Accuracy/train', train_acc, epoch)
         self.writer.add_scalar('Accuracy/test', valid_acc, epoch)
 
-    def save_best_weight(self, model, top1_acc):
+    def save_best_weight(self, model, top1_acc, epoch):
         if top1_acc > self.best_acc:
             self.best_acc = top1_acc
+            self.best_epoch = epoch
             self.log('Saving best model({:07.4f}%) weight to {}'.format(top1_acc, self.log_best_weight_path))
-            torch.save({'weight':model.state_dict(), 'top1_acc':top1_acc}, self.log_best_weight_path)
+            torch.save({'weight': model.state_dict(), 'top1_acc': top1_acc}, self.log_best_weight_path)
 
     def load_best_weight(self, path=None):
         path = path if path else self.log_best_weight_path
@@ -143,7 +141,7 @@ class BaseModelWrapper:
                 best_acc_arg = epoch + 1
                 if test_dl:
                     self.evaluate(test_dl)
-                self.save_best_weight(self.model, best_acc)
+                self.save_best_weight(self.model, best_acc, best_acc_arg)
 
             print('=' * 150)
             self.log(
@@ -169,10 +167,11 @@ class BaseModelWrapper:
             total_y_hat += torch.cat(y_hat, dim=0)
             total_y = torch.cat(total_y, dim=0)
 
-        total_loss = F.cross_entropy(total_y_hat/ncrop, total_y).clone().detach().item()
+        total_loss = F.cross_entropy(total_y_hat / ncrop, total_y).clone().detach().item()
         _, y_label = total_y_hat.max(dim=1)
         total_acc = (y_label == total_y).sum().item() / len(total_y)
 
         print('=' * 150)
-        self.log('[EVALUATE] {}-crop loss {:07.4f}  |  {}-crop acc {:07.4f}%'.format(ncrop, total_loss, ncrop, total_acc * 100))
+        self.log('[EVALUATE] {}-crop loss {:07.4f}  |  {}-crop acc {:07.4f}%'.format(ncrop, total_loss, ncrop,
+                                                                                     total_acc * 100))
         print('=' * 150)
