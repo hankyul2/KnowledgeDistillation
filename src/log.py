@@ -54,7 +54,7 @@ class Result:
 
     def arg2result(self, args, model):
         return [self.get_no(), args.kd_method, args.dataset, args.model_name, args.teacher_model, model.time,
-                model.best_acc, model.best_epoch, args.nepoch, args.lr, args.batch_size, False,
+                model.best_acc.item(), model.best_epoch, args.nepoch, args.lr, args.batch_size, False,
                 model.log_best_weight_path]
 
     def get_no(self):
@@ -63,7 +63,7 @@ class Result:
 
     def check_is_best(self, no):
         csv_list, csv_dict = self.read_result()
-        return csv_list[no][self.is_best] == 'True'
+        return csv_list[no][self.is_best].lower() == 'true'
 
     def save_result(self, args, model):
         with FileLock("{}.lock".format(self.result_path)):
@@ -114,7 +114,7 @@ class Result:
 
     def get_best_model_weight_path(self):
         csv_list, csv_dict = self.read_result()
-        return list(map(lambda x: strip_log_name(x[self.weight_path]), filter(lambda xs: xs[self.is_best] == 'True', csv_list)))
+        return list(map(lambda x: strip_log_name(x[self.weight_path]), filter(lambda xs: xs[self.is_best].lower() == 'true', csv_list)))
 
 
 def get_base_model(model_name, pretrained_dataset):
