@@ -40,3 +40,7 @@ ResNet110>>110/Cifar100 (74.1)
 
 
 
+### References
+
+- [2015, Distilling the knowledge in a Neural Network(ST)](https://arxiv.org/abs/1503.02531)
+

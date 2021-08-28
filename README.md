@@ -54,6 +54,7 @@ pass
 ## Reference
 
 - [Knowledge-Distillation-Zoo](https://github.com/AberHu/Knowledge-Distillation-Zoo)
+- [szagoruko/attention-transfer](https://github.com/szagoruyko/attention-transfer)
 - [2014, Do Deep Nets Really Need to be Deep(Logits)](https://arxiv.org/abs/1312.6184)
 - [2015, Distilling the knowledge in a Neural Network(ST)](https://arxiv.org/abs/1503.02531)
 - [2016, Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer(AT)](https://arxiv.org/abs/1612.03928)

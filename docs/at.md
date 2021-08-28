@@ -42,3 +42,8 @@ ResNet110>>110/Cifar100 (72.6)
 
 
 
+### References
+
+- [szagoruko/attention-transfer](https://github.com/szagoruyko/attention-transfer)
+- [2016, Paying More Attention to Attention: Improving the Performance of Convolutional Neural Networks via Attention Transfer(AT)](https://arxiv.org/abs/1612.03928)
+

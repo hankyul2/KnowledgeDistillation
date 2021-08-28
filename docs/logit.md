@@ -42,3 +42,9 @@ ResNet110>>110/Cifar100 (71.8)
 | 2    | logit  | cifar100 | resnet_32_110 | resnet_32_110 | 2021-08-27/14-43-11 | 71.40425 | 151   | 200    | 0.1  | 128        |
 | 3    | logit  | cifar100 | resnet_32_110 | resnet_32_110 | 2021-08-27/18-19-31 | 71.42428 | 172   | 200    | 0.1  | 128        |
 
+
+
+### References
+
+- [2014, Do Deep Nets Really Need to be Deep(Logits)](https://arxiv.org/abs/1312.6184)
+
