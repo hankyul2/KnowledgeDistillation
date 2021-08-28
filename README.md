@@ -36,14 +36,14 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 | Dataset                                | CIFAR 10       | CIFAR 10       | CIFAR 100      | CIFAR 100      | avg            |
 | -------------------------------------- | -------------- | -------------- | -------------- | -------------- | -------------- |
 | **Model(ResNet)**                      | 20 >> 20       | 110 >> 110     | 20 >> 20       | 110 >> 100     |                |
-| baseline ([summary](docs/baseline.md)) | 92.0           | 92.5           | 67.6           | *71.6          | 80.9           |
+| baseline ([summary](docs/baseline.md)) | 92.0           | 92.5           | 67.6           | 71.6          | 80.9           |
 | Logits ([summary](docs/logit.md))      | 92.5(+0.5)     | **94.2(+1.7)** | 69.2(+1.6)     | 71.8(+0.2)     | 81.9(+1.0)     |
 | **ST** ([summary](docs/st.md))         | **92.8(+0.8)** | 93.9(+1.4)     | **69.9(+2.3)** | **74.1(+2.5)** | **82.7(+1.8)** |
 | AT ([summary](docs/at.md))             | 91.9(-0.1)     | 93.3(+0.8)     | 68.4(+0.8)     | 72.6(+1.0)     | 81.55(+0.65)   |
-| ST + AT ([summary](docs/at_st.md))     | 92.6(+0.6)     | 93.7(+1.2)     | 68.7(+1.1)     | 73.7(+2.1)     | 82.2(+1.5)     |
+| ST + AT ([summary](docs/at_st.md))     | 92.6(+0.6)     | *93.7(+1.2)     | 68.7(+1.1)     | *73.7(+2.1)     | 82.2(+1.5)     |
 | TensorBoard                            |                |                |                |                |                |
 
-*\* means not 3 times average scores*
+*\* means not 2 times average scores*
 
 ## How to apply to your dataset or model
 
