@@ -1,6 +1,10 @@
+---
+typora-copy-images-to: pics
+---
+
 ### AT Summary
 
-![image-20210828093906185](../../../../Users/consi/AppData/Roaming/Typora/typora-user-images/image-20210828093906185.png)
+![image-20210828100013031](pics/image-20210828100013031.png)
 
 ### Train Result
 
