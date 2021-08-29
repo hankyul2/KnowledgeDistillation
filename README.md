@@ -3,10 +3,12 @@ This repo contains basic implementation for Knowledge Distillation. I want you t
 
 ## Tutorial
 
-1. clone repo and download dataset
+1. clone repo and install required library and download dataset
 
 ```bash
 git clone
+cd KnowledgeDistillation
+pip3 install -r requirements.txt
 python3 download_dataset.py
 ```
 
@@ -20,6 +22,38 @@ python3 main.py -g 0 -m resnet_32_20 -d cifar10
 
 ```bash
 python3 main.py -g 0 -m resnet_32_20 -d cifar10 -t resnet_32_20 -k at
+```
+
+4. you can choose training options using arguments showing below.
+
+```bash
+usage: main.py [-h] [-g GPU_ID] [-s SEED] [-m MODEL_NAME] [-d {cifar10,cifar100}] [-b BATCH_SIZE] [-w NUM_WORKERS] [-l LR] [-e NEPOCH]
+               [-t TEACHER_MODEL] [-k {base,logit,st,at,at_st}] [-i ITER]
+
+Knowledge Disillation
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g GPU_ID, --gpu_id GPU_ID
+                        Enter which gpu you want to use
+  -s SEED, --seed SEED  Enter random seed
+  -m MODEL_NAME, --model_name MODEL_NAME
+                        Enter model name
+  -d {cifar10,cifar100}, --dataset {cifar10,cifar100}
+                        Enter dataset
+  -b BATCH_SIZE, --batch_size BATCH_SIZE
+                        Enter batch size for train step
+  -w NUM_WORKERS, --num_workers NUM_WORKERS
+                        Enter the number of workers per dataloader
+  -l LR, --lr LR        Enter learning rate
+  -e NEPOCH, --nepoch NEPOCH
+                        Enter the number of epoch
+  -t TEACHER_MODEL, --teacher_model TEACHER_MODEL
+                        Enter teacher model name
+  -k {base,logit,st,at,at_st}, --kd_method {base,logit,st,at,at_st}
+                        Enter knowledge Distillation Method
+  -i ITER, --iter ITER  Enter the number of iteration
+
 ```
 
 
