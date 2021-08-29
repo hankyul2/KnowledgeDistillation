@@ -1,7 +1,6 @@
 import csv
 import datetime
 import os
-import re
 import shutil
 from glob import glob
 from pathlib import Path

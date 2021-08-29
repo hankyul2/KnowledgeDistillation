@@ -2,8 +2,6 @@ import torch
 from torchvision import transforms
 from torchvision.datasets import CIFAR10, CIFAR100
 
-import numpy as np
-
 
 def convert_to_dataloader(datasets, batch_size, num_workers, train=True):
     return [torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=train, num_workers=num_workers,

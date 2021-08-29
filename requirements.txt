@@ -1,0 +1,7 @@
+torch==1.9.0+cu111
+torchvision==0.10.0+cu111
+numpy==1.19.2
+einops==0.3.0
+tmuxp==1.7.2
+filelock==3.0.12
+easydict
