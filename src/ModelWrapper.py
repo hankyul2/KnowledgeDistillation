@@ -70,8 +70,8 @@ class BaseModelWrapper:
             self.progress = ProgressMeter(len(dl), [self.batch_time, self.losses, self.top1, self.top5],
                                           prefix='VALID: ')
 
-    def forward(self, x, y):
-        std_act, std_feat, std_y_hat = self.model(x)
+    def forward(self, x, y, epoch=None):
+        conv1_out, std_act, std_feat, std_y_hat = self.model(x)
         return self.criterion(std_y_hat, y), std_y_hat
 
     def train(self, train_dl, epoch):
@@ -84,7 +84,7 @@ class BaseModelWrapper:
             self.data_time.update(time.time() - end)
 
             x, y = x.to(self.device), y.to(self.device)
-            loss, std_y_hat = self.forward(x, y)
+            loss, std_y_hat = self.forward(x, y, epoch)
 
             acc1, acc5 = accuracy(std_y_hat, y, topk=(1, 5))
             self.losses.update(loss.item(), x.size(0))

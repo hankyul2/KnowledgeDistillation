@@ -24,9 +24,9 @@ class ModelWrapper(BaseModelWrapper):
         self.optimizer = optimizer
         self.teacher_model = teacher_model
 
-    def forward(self, x, y):
-        std_act, std_feat, std_y_hat = self.model(x)
-        teat_act, teat_feat, teat_y_hat = self.teacher_model(x)
+    def forward(self, x, y, epoch=None):
+        _, std_act, std_feat, std_y_hat = self.model(x)
+        _, teat_act, teat_feat, teat_y_hat = self.teacher_model(x)
 
         cls_loss = self.criterion(std_y_hat, y)
         at_loss, st_loss = self.kd_criterion(std_act, teat_act, std_y_hat, teat_y_hat.detach())
