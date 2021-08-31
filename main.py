@@ -16,7 +16,7 @@ parser.add_argument('-l', '--lr', type=float, default=0.1, help='Enter learning 
 parser.add_argument('-e', '--nepoch', type=int, default=200, help='Enter the number of epoch')
 parser.add_argument('-t', '--teacher_model', type=str, default='', help='Enter teacher model name')
 parser.add_argument('-k', '--kd_method', type=str, default='base', choices=[
-    'base', 'logit', 'st', 'at', 'at_st'
+    'base', 'logit', 'st', 'at', 'at_st', 'fsp'
 ], help='Enter knowledge Distillation Method')
 parser.add_argument('-i', '--iter', type=int, default=1, help='Enter the number of iteration')
 
@@ -42,6 +42,8 @@ if __name__ == '__main__':
         from src.train_st import run
     elif args.kd_method in ['at', 'at_st']:
         from src.train_at import run
+    elif args.kd_method == 'fsp':
+        from src.train_fsp import run
 
     for i in range(args.iter):
         run(args)
