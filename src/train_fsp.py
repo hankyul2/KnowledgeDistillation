@@ -29,13 +29,9 @@ class ModelWrapper(BaseModelWrapper):
         std_conv1_out, std_act, std_feat, std_y_hat = self.model(x)
         teat_conv1_out, teat_act, teat_feat, teat_y_hat = self.teacher_model(x)
 
-        if epoch < 100:
-            cls_loss = torch.tensor(0.0).to(self.device)
-            fsp_loss = self.kd_criterion([std_conv1_out] + std_act[:-1], [teat_conv1_out] + teat_act[:-1], std_act,
-                                         teat_act)
-        else:
-            cls_loss = self.criterion(std_y_hat, y)
-            fsp_loss = torch.tensor(0.0).to(self.device)
+        fsp_loss = self.kd_criterion([std_conv1_out] + std_act[:-1], [teat_conv1_out] + teat_act[:-1], std_act,
+                                     teat_act)
+        cls_loss = self.criterion(std_y_hat, y)
 
         loss = cls_loss + fsp_loss
 
@@ -54,13 +50,11 @@ class ModelWrapper(BaseModelWrapper):
 
 
 class MyOpt:
-    def __init__(self, model, nbatch, phase1_lr=0.001, phase2_lr=0.1,  weight_decay=1e-4, momentum=0.9):
-        self.optimizer = SGD(model.parameters(), lr=phase1_lr, momentum=momentum, weight_decay=weight_decay)
-        self.scheduler = LR.MultiStepLR(self.optimizer, milestones=[50, 75, 150, 175], gamma=0.1)
-        self.phase2_lr = phase2_lr
+    def __init__(self, model, nbatch, lr=0.1, weight_decay=1e-4, momentum=0.9):
+        self.optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+        self.scheduler = LR.MultiStepLR(self.optimizer, milestones=[100, 150], gamma=0.1)
         self.nbatch = nbatch
         self.step_ = 0
-        self.nepoch = 0
 
     def step(self):
         self.optimizer.step()
@@ -68,13 +62,6 @@ class MyOpt:
         if self.step_ % self.nbatch == 0:
             self.scheduler.step()
             self.step_ = 0
-            self.nepoch += 1
-            if self.nepoch == 100:
-                self.start_phase2()
-
-    def start_phase2(self):
-        for param in self.optimizer.param_groups:
-            param['lr'] = self.phase2_lr
 
     def zero_grad(self):
         self.optimizer.zero_grad()
@@ -96,7 +83,7 @@ def run(args):
     # step 3. prepare training tool
     criterion = nn.CrossEntropyLoss()
     kd_criterion = FSP()
-    optimizer = MyOpt(model=student_model, nbatch=len(train_dl), phase2_lr=args.lr)
+    optimizer = MyOpt(model=student_model, nbatch=len(train_dl), lr=args.lr)
 
     # step 4. train
     model = ModelWrapper(log_name=get_log_name(args), model=student_model, teacher_model=teacher_model,
