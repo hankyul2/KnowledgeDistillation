@@ -1,5 +1,14 @@
-# Knowledge Distillation (WIP)
-This repo contains implementation for basic Knowledge Distillation. 
+# Knowledge Distillation
+This repo contains implementation for basic Knowledge Distillation. I want to share training setting, summary and training log. I think you can reproduce same result by following tutorial. 
+
+
+
+**Index**
+
+1. Tutorial
+2. Result Sharing
+3. Experiment Setting
+4. References
 
 
 
@@ -68,6 +77,7 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 - If you click the tensorboard next to method name, you can see the (train/test) (accuracy/loss) in tensorboard.
 - scores are calculated by averaging 3 times results
 - This scores is just my scores done in this work, not official one.
+- **[FSP]** I had trained FSP with original paper settings(2 stage train), but the result was not good. So I train model with setting as same as others.
 
 | Dataset                                | CIFAR 10       | CIFAR 10       | CIFAR 100      | CIFAR 100      | avg            |
 | -------------------------------------- | -------------- | -------------- | -------------- | -------------- | -------------- |
@@ -77,7 +87,7 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 | **ST** <br />([tensorboard](https://tensorboard.dev/experiment/wBPnPMRtQ6mjjio2oZckQA/), [summary](docs/st.md)) | **92.8(+0.8)** | 93.9(+1.4)     | **69.9(+2.3)** | **74.1(+2.5)** | **82.7(+1.8)** |
 | AT <br />([tensorboard](https://tensorboard.dev/experiment/wBPnPMRtQ6mjjio2oZckQA/), [summary](docs/at.md)) | 91.9(-0.1)     | 93.3(+0.8)     | 68.4(+0.8)     | 72.6(+1.0)     | 81.55(+0.65)   |
 | ST + AT <br />([tensorboard](https://tensorboard.dev/experiment/TWk1w7R5RZ6SmD3n6tVd3w/), [summary](docs/at_st.md)) | 92.6(+0.6)     | *93.7(+1.2)     | 68.7(+1.1)     | *73.7(+2.1)     | 82.2(+1.5)     |
-| FSP<br />(tensorboard, summary) |  |  |  |  |  |
+| FSP<br />([tensorboard](https://tensorboard.dev/experiment/zMKtJqwKRJGfXUEAFMXqhw/), [summary](docs/fsp.md)) | 92.0(+0.0) | 92.7(+0.2) | 68.0(+0.4) | 72.8(+1.2) | 81.4(+0.5) |
 
 *\* means 2 times average scores*
 
