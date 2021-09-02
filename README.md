@@ -7,7 +7,7 @@ This repo contains implementation for basic Knowledge Distillation. I want to sh
 
 1. Tutorial
 2. Result Sharing
-3. Test Graph
+3. Test Accuracy Graph
 4. Experiment Setting
 5. References
 
@@ -95,7 +95,7 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 
 
 
-### Test Accuracy Graph
+## Test Accuracy Graph
 
 Cifar100/110->110 
 
