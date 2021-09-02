@@ -7,8 +7,9 @@ This repo contains implementation for basic Knowledge Distillation. I want to sh
 
 1. Tutorial
 2. Result Sharing
-3. Experiment Setting
-4. References
+3. Test Graph
+4. Experiment Setting
+5. References
 
 
 
@@ -77,6 +78,7 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 - If you click the tensorboard next to method name, you can see the (train/test) (accuracy/loss) in tensorboard.
 - scores are calculated by averaging 3 times results
 - This scores is just my scores done in this work, not official one.
+- All model are trained with same settings, which are shown in [Experiment Setting](#experiment-setting) section
 - **[FSP]** I had trained FSP with original paper settings(2 stage train), but the result was not good. So I train model with setting as same as others.
 
 | Dataset                                | CIFAR 10       | CIFAR 10       | CIFAR 100      | CIFAR 100      | avg            |
@@ -93,7 +95,9 @@ I cannot find any reported benchmark score yet. ([Knowledge-Distillation-Zoo](ht
 
 
 
-Cifar100/110->110 Test Accuracy Graph
+### Test Accuracy Graph
+
+Cifar100/110->110 
 
 ![image](https://user-images.githubusercontent.com/31476895/131270339-9fcea168-8a73-44bc-bddf-c6ec59983106.png)
 
